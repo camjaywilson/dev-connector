@@ -3,6 +3,8 @@ const router = express.Router();
 const mongooge = require('mongoose');
 const passport = require('passport');
 
+const validateProfileInput = require('../../validation/profile')
+
 const Profile = require('../../models/Profile');
 const User = require('../../models/User');
 
@@ -17,6 +19,7 @@ router.get('/test', (req, res) => res.json({ msg: "Profile works" }));
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
     const errors = {};
     Profile.findOne({ user: req.user.id })
+        .populate('user', ['name', 'avatar'])
         .then(profile => {
             if (!profile) {
                 errors.noprofile = "There is no profile for this user";
@@ -31,6 +34,12 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 // @desc    create or edit current user's profile 
 // @access  Private
 router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+    const { errors, isValid } = validateProfileInput(req.body);
+
+    if (!isValid) {
+        return res.status(400).json(errors);
+    }
+
     const profileFields = {};
     profileFields.user = req.user.id;
     if (req.body.handle) profileFields.handle = req.body.handle;
@@ -58,7 +67,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
     if (req.body.handle) profileFields.handle = req.body.handle;
 
     Profile.findOne({ user: req.user.id })
-        .then(user => {
+        .then(profile => {
             if (profile) {
                 Profile.findOneAndUpdate({ user: req.user.id }, { $set: profileFields }, { new: true })
                     .then(profile => res.json(profile))
