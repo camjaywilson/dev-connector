@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const mongooge = require('mongoose');
+const mongoose = require('mongoose');
 const passport = require('passport');
 
 const validateProfileInput = require('../../validation/profile');
